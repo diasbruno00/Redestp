@@ -2,7 +2,7 @@ import socket
 import threading
 import json
 
-HOST = '192.168.1.101'
+HOST = '192.168.3.128'
 PORT = 5000
 
 # Criando o socket  IPV4, TCP/IP 
@@ -21,18 +21,17 @@ def receberMensagem(usuario):
     while True:
         try:
             mensagem = usuario.recv(1024).decode('utf-8')
-            print(f'Mensagem recebida: {mensagem}')
+            print(mensagem)
             if mensagem == 'exit':
                 break;
         except ConnectionResetError:
             print('Conexão encerrada')
             usuario.close()
             break
-
 def enviarMensagem(usuario):
     while True:
         try:
-            print("Digite a mensagem: ")
+            print("\n Aguardando mensagem ... \n")
             mensagem = input()
             usuario.send(mensagem.encode('utf-8'))
             if mensagem == 'exit':

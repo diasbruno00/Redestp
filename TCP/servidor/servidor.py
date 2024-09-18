@@ -24,16 +24,27 @@ listaDeClientes = []
 
 clienteEnontradoPadrao = None
 
+listaDeClientesConectados = {}
+
+def retornaApelido(cliente):
+    try:
+        for apelido, clienteConectado in listaDeClientesConectados.items():
+            if clienteConectado == cliente:
+                return apelido
+    except Exception as e:
+        print(f"Erro ao retornar apelido: {e}")
+        return None
+    
 
 
 def conectar_clientes(cliente1, cliente2):
     try:
         # Envia uma mensagem para o cliente1 informando que ele está conectado ao cliente2
-        mensagem_para_cliente1 = json.dumps({'mensagem': f'Você está conectado ao cliente com IP: {cliente2.getpeername()[0]}'})
+        mensagem_para_cliente1 = json.dumps({'mensagem': f'Você está conectado ao cliente: {retornaApelido(cliente2)} \n'})
         cliente1.send(mensagem_para_cliente1.encode('utf-8'))
 
         # Envia uma mensagem para o cliente2 informando que ele está conectado ao cliente1
-        mensagem_para_cliente2 = json.dumps({'mensagem': f'Você está conectado ao cliente com IP: {cliente1.getpeername()[0]}'})
+        mensagem_para_cliente2 = json.dumps({'mensagem': f'Você está conectado ao cliente: {retornaApelido(cliente1)} \n'})
         cliente2.send(mensagem_para_cliente2.encode('utf-8'))
 
 
@@ -63,6 +74,9 @@ def receberMensagem(cliente):
             listaDeApelidos.append(dados.get('apelido', ''))
             print(listaDeApelidos)
 
+            
+            listaDeClientesConectados[dados.get('apelido')] = cliente
+
             # busca o cliente pelo ip
             clienteEncontradoNaBaseDeDados = buscarClientePorIp(dados.get('ip'))
 
@@ -75,6 +89,8 @@ def receberMensagem(cliente):
 
                 while True:
                     mensagem = cliente.recv(1024).decode('utf-8')
+                    apelidoCliente = retornaApelido(cliente)
+                    mensagem = f"{apelidoCliente}: {mensagem}"
                     print(mensagem)
                     enviarMensagem(mensagem, clienteEncontradoNaBaseDeDados)
      

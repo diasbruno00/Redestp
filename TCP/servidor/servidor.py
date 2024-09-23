@@ -89,6 +89,7 @@ def receberMensagem(cliente):
             apelido = cliente.recv(1024).decode('utf-8')
 
             listaDeApelidos.append(apelido)
+            menuDeClienteConectados(listaDeApelidos, cliente)
 
             listaDeClientesConectados[apelido] = cliente
            
@@ -141,7 +142,7 @@ while True:
     try:
         # Aceita a conexão
         cliente, addr = server.accept()
-        menuDeClienteConectados(listaDeApelidos, cliente)
+        #menuDeClienteConectados(listaDeApelidos, cliente)
 
         # Recupera o IP e Porta do cliente
         ip_cliente, porta_cliente = addr

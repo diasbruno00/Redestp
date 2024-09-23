@@ -19,12 +19,29 @@ print('Aguardando conexão de um cliente')
 
 # Aceita a conexão
 listaDeApelidos  = []
-ListaDeIP = []
-listaDeClientes = []
-
-clienteEnontradoPadrao = None
 
 listaDeClientesConectados = {}
+
+
+def menuDeClienteConectados(listaDeApelidos, cliente):
+
+    if len(listaDeApelidos) == 0:
+        cliente.send("Não há clientes conectados".encode('utf-8'))
+        return
+    
+    else:
+        listaDeApelidos = str(listaDeApelidos)
+        print(listaDeApelidos)
+        cliente.send(listaDeApelidos.encode('utf-8'))
+
+
+def retornaCliente(apelido):
+    try:
+        return listaDeClientesConectados.get(apelido, None)
+    except Exception as e:
+        print(f"Erro ao retornar cliente: {e}")
+        return None
+
 
 def retornaApelido(cliente):
     try:
@@ -55,9 +72,13 @@ def conectar_clientes(cliente1, cliente2):
 
 def excluirCliente(cliente):
     try:
-        if cliente in listaDeClientes:
-            listaDeClientes.remove(cliente)
-            cliente.close()
+        apelido = retornaApelido(cliente)
+        # Remove o cliente da lista de clientes conectados
+        listaDeClientesConectados.pop(apelido)
+        # Remove o apelido da lista de apelidos
+        listaDeApelidos.remove(apelido)
+        # Fecha a conexão com o cliente
+        cliente.close()
     except Exception as e:
         print(f"Erro ao excluir cliente: {e}")
 
@@ -65,30 +86,31 @@ def receberMensagem(cliente):
     while True:
         try:
             # Recebe a mensagem do cliente em formato json
-            mensagem = cliente.recv(1024).decode('utf-8')
+            apelido = cliente.recv(1024).decode('utf-8')
 
-            # Decodifica a mensagem json
-            dados = json.loads(mensagem)
-            
+            listaDeApelidos.append(apelido)
+
+            listaDeClientesConectados[apelido] = cliente
+           
             # Adiciona o apelido do cliente na lista de apelidos
-            listaDeApelidos.append(dados.get('apelido', ''))
-            print(listaDeApelidos)
-
             
-            listaDeClientesConectados[dados.get('apelido')] = cliente
-
+            apelidoUsuarioConexao = cliente.recv(1024).decode('utf-8')
             # busca o cliente pelo ip
-            clienteEncontradoNaBaseDeDados = buscarClientePorIp(dados.get('ip'))
+            clienteEncontradoNaBaseDeDados = retornaCliente(apelidoUsuarioConexao)
 
             if clienteEncontradoNaBaseDeDados is None:
-                cliente.send("cliente nao encontrado").encode('utf-8')
+                cliente.send("cliente nao encontrado".encode('utf-8'))
                 break
             else:
-                # Se o cliente não foi encontrado, envia uma mensagem de erro
-                conectar_clientes(cliente, clienteEncontradoNaBaseDeDados)
 
                 while True:
+                    
                     mensagem = cliente.recv(1024).decode('utf-8')
+
+                    if mensagem == 'status':
+                        menuDeClienteConectados(listaDeApelidos, cliente)
+                        continue
+                        
                     apelidoCliente = retornaApelido(cliente)
                     mensagem = f"{apelidoCliente}: {mensagem}"
                     print(mensagem)
@@ -115,33 +137,22 @@ def enviarMensagem(mensagem, cliente):
         excluirCliente(cliente)
 
 
-def buscarClientePorIp(ip):
-    for cliente in listaDeClientes:
-        if cliente.getpeername()[0] == ip:
-            return cliente
-
-    return None
-
-67
 while True:
     try:
         # Aceita a conexão
         cliente, addr = server.accept()
+        menuDeClienteConectados(listaDeApelidos, cliente)
 
         # Recupera o IP e Porta do cliente
         ip_cliente, porta_cliente = addr
-        listaDeClientes.append(cliente)
-
-        print(cliente)
 
         print(f'Conectado com o cliente de IP: {ip_cliente} e Porta: {porta_cliente}')
-        ListaDeIP.append(ip_cliente)
-
-        print(ListaDeIP)
+    
         
         # Recebe dados do cliente em pedaços de 1024 bytes
         thread = threading.Thread(target=receberMensagem, args=(cliente,))
         thread.start()
+
     except ConnectionError as e:
         print(f"Erro ao conectar com o cliente: {e}")
     

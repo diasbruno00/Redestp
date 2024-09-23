@@ -33,6 +33,10 @@ def receberMensagem(usuario):
             print(mensagem)
             if mensagem == 'exit':
                 break
+            if mensagem == 'atualizarLista':
+                receberListaDeUsuariosConectados(usuario)
+                soliciarApelidoDoUsuario()
+
         except ConnectionResetError:
             print('Conexão encerrada')
             usuario.close()

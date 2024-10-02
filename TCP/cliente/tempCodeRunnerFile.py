@@ -1,1 +1,1 @@
-192.168.1.102
+        usuario.send(mensagem.encode('utf-8'))

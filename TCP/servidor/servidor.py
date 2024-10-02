@@ -2,9 +2,9 @@ import socket
 import threading
 import json
 
-
-HOST = '0.0.0.0' # Endereço IP do servidor
-PORT = 5000
+# Endereço IP e Porta do servidor
+HOST = str(input("Digite o endereço IP do servidor: "))
+PORT = 2001
 
 # Cria um socket TCP/IP
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -22,7 +22,7 @@ listaDeApelidos  = []
 
 listaDeClientesConectados = {}
 
-
+# Função para enviar a lista de clientes conectados
 def menuDeClienteConectados(listaDeApelidos, cliente):
 
     if len(listaDeApelidos) == 0:
@@ -31,10 +31,9 @@ def menuDeClienteConectados(listaDeApelidos, cliente):
     
     else:
         listaDeApelidos = str(listaDeApelidos)
-        print(listaDeApelidos)
         cliente.send(listaDeApelidos.encode('utf-8'))
 
-
+# Função para retornar o cliente
 def retornaCliente(apelido):
     try:
         return listaDeClientesConectados.get(apelido, None)
@@ -42,7 +41,7 @@ def retornaCliente(apelido):
         print(f"Erro ao retornar cliente: {e}")
         return None
 
-
+# Função para retornar o apelido
 def retornaApelido(cliente):
     try:
         for apelido, clienteConectado in listaDeClientesConectados.items():
@@ -53,7 +52,8 @@ def retornaApelido(cliente):
         return None
     
 
-
+# Função para conectar clientes
+# não estou usando essa função
 def conectar_clientes(cliente1, cliente2):
     try:
         # Envia uma mensagem para o cliente1 informando que ele está conectado ao cliente2
@@ -70,6 +70,7 @@ def conectar_clientes(cliente1, cliente2):
 
 
 
+# Função para excluir cliente
 def excluirCliente(cliente):
     try:
         apelido = retornaApelido(cliente)
@@ -82,27 +83,62 @@ def excluirCliente(cliente):
     except Exception as e:
         print(f"Erro ao excluir cliente: {e}")
 
+# Função para receber mensagem
 def receberMensagem(cliente):
+
     while True:
         try:
             # Recebe a mensagem do cliente em formato json
             apelido = cliente.recv(1024).decode('utf-8')
 
             listaDeApelidos.append(apelido)
+
             menuDeClienteConectados(listaDeApelidos, cliente)
 
             listaDeClientesConectados[apelido] = cliente
            
-            # Adiciona o apelido do cliente na lista de apelidos
-            
             apelidoUsuarioConexao = cliente.recv(1024).decode('utf-8')
-            # busca o cliente pelo ip
+
+            # busca o cliente pelo apelido
             clienteEncontradoNaBaseDeDados = retornaCliente(apelidoUsuarioConexao)
 
             if clienteEncontradoNaBaseDeDados is None:
-                cliente.send("cliente nao encontrado".encode('utf-8'))
-                break
+
+                cliente.send(f"cliente nao encontrado".encode('utf-8'))
+
+                while True:
+
+                    menuDeClienteConectados(listaDeApelidos, cliente)
+
+                    apelidoUsuarioConexao = cliente.recv(1024).decode('utf-8')
+
+                    if retornaCliente(apelidoUsuarioConexao) is not None:
+
+                        clienteEncontradoNaBaseDeDados = retornaCliente(apelidoUsuarioConexao)
+                        cliente.send("cliente encontrado".encode('utf-8'))
+
+                        while True:
+                            
+                            mensagem = cliente.recv(1024).decode('utf-8')
+
+                            if mensagem == 'status':
+                                menuDeClienteConectados(listaDeApelidos, cliente)
+                                continue
+
+                            if mensagem == 'sair':
+                                excluirCliente(cliente)
+                                break
+                                
+                            apelidoCliente = retornaApelido(cliente)
+                            mensagem = f"{apelidoCliente}: {mensagem}"
+                            print(mensagem)
+                            enviarMensagem(mensagem, clienteEncontradoNaBaseDeDados)
+
+                    else:
+                        cliente.send("cliente nao encontrado".encode('utf-8'))
             else:
+
+                cliente.send("cliente encontrado".encode('utf-8'))
 
                 while True:
                     
@@ -111,6 +147,10 @@ def receberMensagem(cliente):
                     if mensagem == 'status':
                         menuDeClienteConectados(listaDeApelidos, cliente)
                         continue
+
+                    if mensagem == 'sair':
+                        excluirCliente(cliente)
+                        break
                         
                     apelidoCliente = retornaApelido(cliente)
                     mensagem = f"{apelidoCliente}: {mensagem}"
@@ -130,6 +170,7 @@ def receberMensagem(cliente):
             excluirCliente(cliente)
             break
 
+# Função para enviar mensagem
 def enviarMensagem(mensagem, cliente):
     try:
         cliente.send(mensagem.encode('utf-8'))
@@ -137,7 +178,7 @@ def enviarMensagem(mensagem, cliente):
         print(f"Erro ao enviar mensagem: {e}")
         excluirCliente(cliente)
 
-
+# Função para enviar a lista de clientes conectados
 while True:
     try:
         # Aceita a conexão
